@@ -1,6 +1,10 @@
 package com.recorder_mora.lifeblackbox;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.media.MediaPlayer;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -12,8 +16,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-
-import static com.recorder_mora.lifeblackbox.MainActivity.mPath;
+import java.util.List;
 
 
 public class VoiceRecAdapter extends RecyclerView.Adapter<VoiceRecAdapter.ViewHolder> {
@@ -21,7 +24,7 @@ public class VoiceRecAdapter extends RecyclerView.Adapter<VoiceRecAdapter.ViewHo
     Context context;
     MediaPlayer mediaPlayer;
 
-    public VoiceRecAdapter(Context context, ArrayList<VoiceRecItem> voiceRecItems, MediaPlayer mediaPlayer){
+    public VoiceRecAdapter(Context context, ArrayList<VoiceRecItem> voiceRecItems, MediaPlayer mediaPlayer) {
         this.context = context;
         this.voiceRecItems = voiceRecItems;
         this.mediaPlayer = mediaPlayer;
@@ -39,7 +42,7 @@ public class VoiceRecAdapter extends RecyclerView.Adapter<VoiceRecAdapter.ViewHo
     public void onBindViewHolder(@NonNull VoiceRecAdapter.ViewHolder holder, final int position) {
         holder.txt_title.setText(voiceRecItems.get(position).rec_title);
         holder.txt_runtime.setText(voiceRecItems.get(position).rec_runningtime);
-        if(voiceRecItems.get(position).rec_selected){
+        if (voiceRecItems.get(position).rec_selected) {
             holder.img_box.setImageResource(R.drawable.play);
         } else {
             holder.img_box.setImageResource(R.drawable.circumference);
@@ -48,7 +51,7 @@ public class VoiceRecAdapter extends RecyclerView.Adapter<VoiceRecAdapter.ViewHo
         holder.layout_play.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(voiceRecItems.get(position).isRec_selected()){
+                if (voiceRecItems.get(position).isRec_selected()) {
                     voiceRecItems.get(position).setRec_selected(false);
                 } else {
                     setSelectVoiceRec(position);
@@ -58,19 +61,45 @@ public class VoiceRecAdapter extends RecyclerView.Adapter<VoiceRecAdapter.ViewHo
         });
     }
 
-    public void setSelectVoiceRec(int position){
-        for (int i = 0 ; i < voiceRecItems.size(); i++){
+    public void setSelectVoiceRec(int position) {
+        for (int i = 0; i < voiceRecItems.size(); i++) {
             voiceRecItems.get(i).setRec_selected(false);
         }
+//        sendImplicitBroadcast();
+//        killMediaPlayer();
         voiceRecItems.get(position).setRec_selected(true);
         try {
             mediaPlayer.reset();
             mediaPlayer.setDataSource(voiceRecItems.get(position).filepath);
             mediaPlayer.prepare();
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         mediaPlayer.start();
+    }
+
+    private void sendImplicitBroadcast(Context ctxt, Intent i)
+
+    {
+        PackageManager pm=ctxt.getPackageManager();
+        List<ResolveInfo> matches=pm.queryBroadcastReceivers(i, 0);
+        for (ResolveInfo resolveInfo : matches) {
+            Intent explicit=new Intent(i);
+            ComponentName cn= new ComponentName(resolveInfo.activityInfo.applicationInfo.packageName, resolveInfo.activityInfo.name);
+            explicit.setComponent(cn);
+            ctxt.sendBroadcast(explicit);
+        }
+    }
+
+
+    private void killMediaPlayer() {
+        if(mediaPlayer != null){
+            try {
+                mediaPlayer.release();
+            } catch(Exception e){
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -85,10 +114,10 @@ public class VoiceRecAdapter extends RecyclerView.Adapter<VoiceRecAdapter.ViewHo
 
         public ViewHolder(View itemView) {
             super(itemView);
-            img_box =  itemView.findViewById(R.id.img_box);
-            txt_title =  itemView.findViewById(R.id.txt_title);
-            txt_runtime =  itemView.findViewById(R.id.txt_runtime);
-            layout_play =  itemView.findViewById(R.id.layout_play);
+            img_box = itemView.findViewById(R.id.img_box);
+            txt_title = itemView.findViewById(R.id.txt_title);
+            txt_runtime = itemView.findViewById(R.id.txt_runtime);
+            layout_play = itemView.findViewById(R.id.layout_play);
         }
     }
 }

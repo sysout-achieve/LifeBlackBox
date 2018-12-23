@@ -1,9 +1,12 @@
 package com.recorder_mora.lifeblackbox;
 
 import android.Manifest;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.media.MediaRecorder;
 import android.os.Environment;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,15 +18,19 @@ import com.gun0912.tedpermission.PermissionListener;
 import com.gun0912.tedpermission.TedPermission;
 
 import java.io.File;
-import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity {
     MediaRecorder recorder = new MediaRecorder();
     MediaRecorder mRecorder = new MediaRecorder();
     Button start, stop, btn_list;
-    public final static String mPath =  Environment.getExternalStorageDirectory().getAbsolutePath() + "/record/lifeBB";
+    public final static String mPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/record/lifebb";
     boolean isRecording = false;
+    NotificationManager manager;
+
+    String recordName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +40,19 @@ public class MainActivity extends AppCompatActivity  {
 //        start.setOnClickListener(this);
         stop = findViewById(R.id.bt_stop);
         btn_list = findViewById(R.id.btn_list);
+        manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+//            NotificationChannel notificationChannel = new NotificationChannel("channel_id", "channel_name", NotificationManager.IMPORTANCE_DEFAULT);
+//            notificationChannel.setDescription("channel description");
+//            notificationChannel.enableLights(true);
+//            notificationChannel.setLightColor(Color.GREEN);
+//            notificationChannel.enableVibration(true);
+//            notificationChannel.setVibrationPattern(new long[]{100, 200, 100, 200});
+//            notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+//            notificationManager.createNotificationChannel(notificationChannel);
+//        }
+
 //        stop.setOnClickListener(this);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -41,28 +61,44 @@ public class MainActivity extends AppCompatActivity  {
                     initAudioRecorder();
                     mRecorder.start();
                     isRecording = true;
+                    setNotiIcon();
                     start.setText("Stop Recording");
                 } else {
                     mRecorder.stop();
                     isRecording = false;
+                    manager.cancel(0);
                     start.setText("Start Recording");
                 }
+            }
+        });
+
+        stop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setNotiIcon();
             }
         });
 
         btn_list.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if(isRecording){
+                    mRecorder.reset();
+                    isRecording = false;
+                }
+                start.setText("Start Recording");
                 Intent intent = new Intent(MainActivity.this, RecordListActivity.class);
                 startActivity(intent);
             }
         });
+
 
         PermissionListener permissionlistener = new PermissionListener() {
             @Override
             public void onPermissionGranted() {
                 Toast.makeText(MainActivity.this, "권한 허가", Toast.LENGTH_SHORT).show();
             }
+
             @Override
             public void onPermissionDenied(ArrayList<String> deniedPermissions) {
                 Toast.makeText(MainActivity.this, "권한 거부\n" + deniedPermissions.toString(), Toast.LENGTH_SHORT).show();
@@ -75,47 +111,54 @@ public class MainActivity extends AppCompatActivity  {
                 .check();
     }
 
-//    public void startRec() {
-//        try {
-//            File file = Environment.getExternalStorageDirectory();
-//            //갤럭시 S4기준으로 /storage/emulated/0/의 경로를 갖고 시작한다.
-//            String path = file.getAbsolutePath() + "파일 경로 ";
-//
-//            recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-//            //첫번째로 어떤 것으로 녹음할것인가를 설정한다. 마이크로 녹음을 할것이기에 MIC로 설정한다.
-//            recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-//            //이것은 파일타입을 설정한다. 녹음파일의경우 3gp로해야 용량도 작고 효율적인 녹음기를 개발할 수있다.
-//            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-//            //이것은 코덱을 설정하는 것이라고 생각하면된다.
-//            recorder.setOutputFile(path);
-//            //저장될 파일을 저장한뒤
-//            recorder.prepare();
-//            recorder.start();
-//            //시작하면된다.
-//            Toast.makeText(this, "start Record", Toast.LENGTH_LONG).show();
-//        } catch (IllegalStateException e) {
-//        // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//        // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-//    }
+    public static void createNewDirectory(String name) {
+        // create a directory before creating a new file inside it.
+        File directory = new File(Environment.getExternalStorageDirectory().getAbsolutePath(), name);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+    }
+
+    public void setNotiIcon() {
+        //알림(Notification)을 관리하는 NotificationManager 얻어오기
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                MainActivity.this
+                , 0
+                , new Intent(getApplicationContext(), MainActivity.class)
+                ,PendingIntent.FLAG_UPDATE_CURRENT);
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.ic_stat_radio_button_checked)
+                .setContentTitle("Listening")
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .setDefaults(NotificationCompat.DEFAULT_VIBRATE)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+        manager.notify(0, mBuilder.build());
+    }
 
     public void initAudioRecorder() {
+        long now = System.currentTimeMillis();
+        Date date = new Date(now);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_hhmm");
+
+        recordName = sdf.format(date);
+//        recordName = "test";
+
         mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
-        Log.d("TAG", "file path is " + mPath);
+        Log.d("TAG", "file path is " + recordName);
 //        File dir = new File(context.getFilesDir(), "폴더명");
 //        if(!mPath.exists()){
 //            mPath.mkdirs();
 //        }
+        createNewDirectory("/record/lifebb");
+        String dir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/record/lifebb/";
 
+        mRecorder.setOutputFile(dir + recordName + ".mp4");
 
-
-        mRecorder.setOutputFile(mPath);
         try {
             mRecorder.prepare();
         } catch (Exception e) {
@@ -123,6 +166,21 @@ public class MainActivity extends AppCompatActivity  {
         }
     }
 
+    @Override
+
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(isRecording){
+            mRecorder.stop();
+            manager.cancel(0);
+            isRecording = false;
+        }
+        super.onDestroy();
+    }
 //    public void stopRec() {
 //        recorder.stop();
 //        //멈추는 것이다.

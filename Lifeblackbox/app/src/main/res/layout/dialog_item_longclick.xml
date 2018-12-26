@@ -36,17 +36,17 @@
             android:layout_height="1.5dp"
             app:srcCompat="@drawable/line_bottom" />
 
-        <Button
-            android:id="@+id/btn_refactor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@color/cardview_light_background"
-            android:letterSpacing="-0.02"
-            android:lineSpacingExtra="5sp"
-            android:text="이름 바꾸기"
-            android:textColor="@android:color/background_dark"
-            android:textSize="13sp" />
+        <!--<Button-->
+            <!--android:id="@+id/btn_refactor"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_weight="1"-->
+            <!--android:background="@color/cardview_light_background"-->
+            <!--android:letterSpacing="-0.02"-->
+            <!--android:lineSpacingExtra="5sp"-->
+            <!--android:text="이름 바꾸기"-->
+            <!--android:textColor="@android:color/background_dark"-->
+            <!--android:textSize="13sp" />-->
 
         <ImageView
             android:id="@+id/imageView3"
